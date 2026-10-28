@@ -1,0 +1,19 @@
+name: podman-probe
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Probe podman sandbox
+        run: |
+          echo "uid=$(id -u) gid=$(id -g)"
+          which podman docker || true
+          podman --version || true
+          podman info --format '{{.Host.Os}} {{.Version.Version}}' || true
+          mkdir -p /tmp/probe-root && echo hello > /tmp/probe-root/f.txt
+          timeout 240 podman run --rm --read-only --network=none --cap-drop=ALL --security-opt=no-new-privileges --userns=keep-id --user "$(id -u):$(id -g)" --mount "type=bind,source=/tmp/probe-root,target=/tmp/probe-root,readonly,relabel=shared" docker.io/library/python@sha256:5560e9ab8709f459489e5b8aa696eda8a07ef821e14bb122be62d91234bfa98b python3 -c "print('sandbox-ok')"
+          echo "podman-run-rc=$?"
+          timeout 240 docker run --rm --read-only --network=none --cap-drop=ALL --security-opt=no-new-privileges --user "$(id -u):$(id -g)" --mount "type=bind,source=/tmp/probe-root,target=/tmp/probe-root,readonly" docker.io/library/python@sha256:5560e9ab8709f459489e5b8aa696eda8a07ef821e14bb122be62d91234bfa98b python3 -c "print('docker-sandbox-ok')"
+          echo "docker-run-rc=$?"
