@@ -1,0 +1,9 @@
+name: mac
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  mac:
+    runs-on: macos-15
+    steps:
+      - run: echo hello-from-macos && sw_vers
