@@ -1,0 +1,17 @@
+name: lint-probe2
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Probe lint mount permission variants
+        run: |
+          mkdir -m 700 /tmp/lintroot
+          curl -sL https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz | tar -xz -C /tmp/lintroot actionlint
+          chmod 700 /tmp/lintroot/actionlint
+          curl -sL https://raw.githubusercontent.com/warelik/osconfig/master/.github/workflows/google-osconfig-agent-inventory.yml -o /tmp/lintroot/workflow.yml
+          ls -la /tmp/lintroot
+          timeout 120 podman run --rm --read-only --network=none --cap-drop=ALL --security-opt=no-new-privileges --user "$(id -u):$(id -g)" --mount "type=bind,source=/tmp/lintroot/actionlint,target=/tools/actionlint,readonly,relabel=shared" --mount "type=bind,source=/tmp/lintroot/workflow.yml,target=/workflow.yml,readonly,relabel=shared" --tmpfs /tmp:rw,nosuid,nodev,size=64m --env HOME=/tmp docker.io/library/python@sha256:5560e9ab8709f459489e5b8aa696eda8a07ef821e14bb122be62d91234bfa98b /tools/actionlint -shellcheck= -pyflakes= /workflow.yml; echo "podman-nokeepid rc=$?"
+          timeout 120 podman run --rm --read-only --network=none --cap-drop=ALL --security-opt=no-new-privileges --userns=keep-id --user "$(id -u):$(id -g)" --mount "type=bind,source=/tmp/lintroot/actionlint,target=/tools/actionlint,readonly,relabel=shared" --mount "type=bind,source=/tmp/lintroot/workflow.yml,target=/workflow.yml,readonly,relabel=shared" --tmpfs /tmp:rw,nosuid,nodev,size=64m --env HOME=/tmp docker.io/library/python@sha256:5560e9ab8709f459489e5b8aa696eda8a07ef821e14bb122be62d91234bfa98b /tools/actionlint -shellcheck= -pyflakes= /workflow.yml; echo "podman-keepid rc=$?"
