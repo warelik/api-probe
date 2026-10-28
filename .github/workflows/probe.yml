@@ -1,0 +1,20 @@
+name: probe
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fetch comments as Actions token
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/warelik/zed-titlebarless/issues/313/comments?per_page=100&page=1" > comments-actions.json
+          gh --version > gh-version.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: probe
+          path: |
+            comments-actions.json
+            gh-version.txt
